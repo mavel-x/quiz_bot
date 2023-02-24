@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 welcome_msg = 'Привет! Я бот для викторины.'
 correct_answer_msg = 'Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос».'
 wrong_answer_msg = 'Неправильно… Попробуешь ещё раз?'
+answer_msg = ('💀 Правильный ответ:\n'
+              '{}\n'
+              'Удачи со следующим вопросом!')
 
 new_question_btn = 'Новый вопрос'
 give_up_btn = 'Сдаться'
@@ -60,12 +63,21 @@ def evaluate_answer(update: Update, context: CallbackContext) -> int:
         return ConversationState.ACTIVE_QUESTION
 
 
+def give_up(update: Update, context: CallbackContext) -> int:
+    redis_connection: redis.Redis = context.bot_data['redis_connection']
+    raw_quiz_item = redis_connection.get(update.effective_user.id)
+    current_quiz_item = QuizItem.from_json(raw_quiz_item)
+    update.message.reply_text(answer_msg.format(current_quiz_item.answer))
+    return send_new_question(update, context)
+
+
 conv_handler = ConversationHandler(
     entry_points=[
         MessageHandler(Filters.regex(f'^{new_question_btn}$'), send_new_question),
     ],
     states={
         ConversationState.ACTIVE_QUESTION: [
+            MessageHandler(Filters.regex(f'^{give_up_btn}$'), give_up),
             MessageHandler(Filters.text & ~Filters.command, evaluate_answer),
         ],
     },
