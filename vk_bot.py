@@ -9,8 +9,7 @@ from vk_api.longpoll import VkLongPoll, VkEventType
 from vk_api.utils import get_random_id
 
 import bot_strings
-from quiz import QuizItem, get_random_quiz_item
-
+from quiz_items import QuizItem
 
 logger = logging.getLogger(Path(__file__).stem)
 
@@ -27,7 +26,7 @@ def get_quiz_keyboard():
 
 def send_new_question(event: vk_api.longpoll.Event, vk_client: vk_api.vk_api.VkApiMethod,
                       redis_connection: redis.Redis):
-    quiz_item = get_random_quiz_item()
+    quiz_item = QuizItem.random()
     redis_connection.set(event.user_id, quiz_item.as_json())
     vk_client.messages.send(
         user_id=event.user_id,
@@ -82,11 +81,6 @@ def handle_message(event: vk_api.longpoll.Event, vk_client: vk_api.vk_api.VkApiM
 
 
 def main():
-    logging.basicConfig(
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        level=logging.DEBUG
-    )
-
     env = Env()
     env.read_env()
     vk_token = env.str('VK_TOKEN')
@@ -107,4 +101,8 @@ def main():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=logging.DEBUG
+    )
     main()

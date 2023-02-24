@@ -10,8 +10,7 @@ from telegram.ext import (Updater, CommandHandler, ConversationHandler,
                           MessageHandler, Filters, CallbackContext)
 
 import bot_strings
-from quiz import QuizItem, get_random_quiz_item
-
+from quiz_items import QuizItem
 
 logger = logging.getLogger(Path(__file__).stem)
 
@@ -31,7 +30,7 @@ def help_command(update: Update, context: CallbackContext) -> None:
 
 
 def send_new_question(update: Update, context: CallbackContext) -> int:
-    quiz_item = get_random_quiz_item()
+    quiz_item = QuizItem.random()
     redis_connection: redis.Redis = context.bot_data['redis_connection']
     redis_connection.set(update.effective_user.id, quiz_item.as_json())
     update.message.reply_text(quiz_item.question)
