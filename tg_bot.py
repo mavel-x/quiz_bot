@@ -1,5 +1,6 @@
 import enum
 import logging
+from pathlib import Path
 
 import redis
 import telegram
@@ -8,21 +9,11 @@ from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import (Updater, CommandHandler, ConversationHandler,
                           MessageHandler, Filters, CallbackContext)
 
+import bot_strings
 from quiz import QuizItem, get_random_quiz_item
 
 
-logger = logging.getLogger(__name__)
-
-welcome_msg = 'Привет! Я бот для викторины.'
-correct_answer_msg = 'Правильно! Поздравляю! Для следующего вопроса нажми «Новый вопрос».'
-wrong_answer_msg = 'Неправильно… Попробуешь ещё раз?'
-answer_msg = ('💀 Правильный ответ:\n'
-              '{}\n'
-              'Удачи со следующим вопросом!')
-
-new_question_btn = 'Новый вопрос'
-give_up_btn = 'Сдаться'
-my_score_btn = 'Мой счет'
+logger = logging.getLogger(Path(__file__).stem)
 
 
 class ConversationState(enum.IntEnum):
@@ -30,9 +21,9 @@ class ConversationState(enum.IntEnum):
 
 
 def start(update: Update, context: CallbackContext) -> None:
-    keyboard = [[new_question_btn, give_up_btn], [my_score_btn]]
+    keyboard = [[bot_strings.new_question_btn, bot_strings.give_up_btn], [bot_strings.my_score_btn]]
     reply_markup = ReplyKeyboardMarkup(keyboard)
-    update.message.reply_text(welcome_msg, reply_markup=reply_markup)
+    update.message.reply_text(bot_strings.welcome_msg, reply_markup=reply_markup)
 
 
 def help_command(update: Update, context: CallbackContext) -> None:
@@ -44,10 +35,7 @@ def send_new_question(update: Update, context: CallbackContext) -> int:
     redis_connection: redis.Redis = context.bot_data['redis_connection']
     redis_connection.set(update.effective_user.id, quiz_item.as_json())
     update.message.reply_text(quiz_item.question)
-
-    # FIXME debug
-    print(quiz_item.answer)
-
+    logger.debug(f'Answer: {quiz_item.answer}')
     return ConversationState.ACTIVE_QUESTION
 
 
@@ -56,10 +44,10 @@ def evaluate_answer(update: Update, context: CallbackContext) -> int:
     raw_quiz_item = redis_connection.get(update.effective_user.id)
     current_quiz_item = QuizItem.from_json(raw_quiz_item)
     if update.message.text.lower() == current_quiz_item.answer.lower():
-        update.message.reply_text(correct_answer_msg)
+        update.message.reply_text(bot_strings.correct_answer_msg)
         return ConversationHandler.END
     else:
-        update.message.reply_text(wrong_answer_msg)
+        update.message.reply_text(bot_strings.wrong_answer_msg)
         return ConversationState.ACTIVE_QUESTION
 
 
@@ -67,17 +55,17 @@ def give_up(update: Update, context: CallbackContext) -> int:
     redis_connection: redis.Redis = context.bot_data['redis_connection']
     raw_quiz_item = redis_connection.get(update.effective_user.id)
     current_quiz_item = QuizItem.from_json(raw_quiz_item)
-    update.message.reply_text(answer_msg.format(current_quiz_item.answer))
+    update.message.reply_text(bot_strings.answer_msg.format(current_quiz_item.full_answer))
     return send_new_question(update, context)
 
 
 conv_handler = ConversationHandler(
     entry_points=[
-        MessageHandler(Filters.regex(f'^{new_question_btn}$'), send_new_question),
+        MessageHandler(Filters.regex(f'^{bot_strings.new_question_btn}$'), send_new_question),
     ],
     states={
         ConversationState.ACTIVE_QUESTION: [
-            MessageHandler(Filters.regex(f'^{give_up_btn}$'), give_up),
+            MessageHandler(Filters.regex(f'^{bot_strings.give_up_btn}$'), give_up),
             MessageHandler(Filters.text & ~Filters.command, evaluate_answer),
         ],
     },
@@ -109,6 +97,6 @@ def main() -> None:
 if __name__ == '__main__':
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        level=logging.INFO
+        level=logging.DEBUG
     )
     main()
