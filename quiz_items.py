@@ -26,10 +26,14 @@ class QuizItem:
     @classmethod
     def extract_all_from_file(cls, file: Path):
         split_file = file.read_text(encoding='KOI8-R').split('\n\n')
-        questions = filter(lambda text: text.lstrip().startswith('Вопрос'), split_file)
-        answers = filter(lambda text: text.lstrip().startswith('Ответ'), split_file)
-        return [cls(cls.parse_from_txt(question), cls.parse_from_txt(answer))
-                for question, answer in zip(questions, answers)]
+        raw_questions = filter(lambda text: text.lstrip().startswith('Вопрос'), split_file)
+        raw_answers = filter(lambda text: text.lstrip().startswith('Ответ'), split_file)
+        quiz_items = []
+        for raw_question, raw_answer in zip(raw_questions, raw_answers):
+            question = cls.parse_from_txt(raw_question)
+            answer = cls.parse_from_txt(raw_answer)
+            quiz_items.append(cls(question, answer))
+        return quiz_items
 
     @classmethod
     def random(cls):
