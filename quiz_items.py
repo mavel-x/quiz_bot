@@ -3,8 +3,8 @@ import json
 from pathlib import Path
 from random import choice
 
-
-QUESTION_DIR = Path('data/quiz-questions')
+BASE_DIR = Path(__file__).parent
+QUESTION_DIR = BASE_DIR / 'data/quiz-questions'
 
 
 @dataclasses.dataclass
