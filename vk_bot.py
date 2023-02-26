@@ -81,6 +81,11 @@ def handle_message(event: vk_api.longpoll.Event, vk_client: vk_api.vk_api.VkApiM
 
 
 def main():
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=logging.DEBUG
+    )
+
     env = Env()
     env.read_env()
     vk_token = env.str('VK_TOKEN')
@@ -101,8 +106,4 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        level=logging.DEBUG
-    )
     main()

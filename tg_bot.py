@@ -74,6 +74,11 @@ conv_handler = ConversationHandler(
 
 
 def main() -> None:
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=logging.DEBUG
+    )
+
     env = Env()
     env.read_env()
     tg_token = env.str('TG_TOKEN')
@@ -94,8 +99,4 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    logging.basicConfig(
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        level=logging.DEBUG
-    )
     main()
