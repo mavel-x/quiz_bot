@@ -1,7 +1,5 @@
 import dataclasses
-import json
 from pathlib import Path
-from random import choice
 
 BASE_DIR = Path(__file__).parent
 QUESTION_DIR = BASE_DIR / 'data/quiz-questions'
@@ -19,43 +17,9 @@ class QuizItem:
     def as_dict(self):
         return dataclasses.asdict(self)
 
-    def as_json(self):
-        return json.dumps(self.as_dict())
-
-    @classmethod
-    def from_json(cls, json_str):
-        return cls(**json.loads(json_str))
-
     @classmethod
     def from_dotobject(cls, dotobject):
         return cls(
             question=dotobject['question'],
             full_answer=dotobject['full_answer'],
-        )
-
-    @classmethod
-    def extract_all_from_file(cls, file: Path):
-        split_file = file.read_text(encoding='KOI8-R').split('\n\n')
-        raw_questions = filter(lambda text: text.lstrip().startswith('Вопрос'), split_file)
-        raw_answers = filter(lambda text: text.lstrip().startswith('Ответ'), split_file)
-        quiz_items = []
-        for raw_question, raw_answer in zip(raw_questions, raw_answers):
-            question = cls.parse_from_txt(raw_question)
-            answer = cls.parse_from_txt(raw_answer)
-            quiz_items.append(cls(question, answer))
-        return quiz_items
-
-    @classmethod
-    def random(cls):
-        question_file = choice(list(QUESTION_DIR.iterdir()))
-        quiz_items = cls.extract_all_from_file(question_file)
-        return choice(quiz_items)
-
-    @staticmethod
-    def parse_from_txt(quiz_item: str):
-        return (
-            quiz_item
-            .partition(':')[2]
-            .strip()
-            .replace('\n', ' ')
         )

@@ -51,7 +51,7 @@ def main():
 
     env = Env()
     env.read_env()
-    question_limit = env.int('QUESTION_LIMIT', 15_000)
+    question_limit = env.int('QUESTION_LIMIT', 1_000)
     question_dir = BASE_DIR / env.path('QUESTION_DIR', 'data/quiz-questions')
 
     redis = redisworks.Root(
@@ -62,9 +62,11 @@ def main():
 
     question_files = [file for file in question_dir.iterdir() if file.suffix == '.txt']
     quiz_items = get_quiz_items_from_files(question_files, limit=question_limit)
-    for num, quiz_item in enumerate(quiz_items, start=1):
-        redis[f'quiz_item_{num}'] = quiz_item.as_dict()
-        logger.info(f'Uploaded question {num}.')
+    for item_num, quiz_item in enumerate(quiz_items, start=1):
+        redis[f'quiz_item_{item_num}'] = quiz_item.as_dict()
+        logger.info(f'Uploaded question {item_num}.')
+        if item_num % 50 == 0:
+            redis.available_questions = item_num
 
     logger.info('Finished uploading.')
 
