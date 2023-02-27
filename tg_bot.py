@@ -21,7 +21,7 @@ class ConversationState(enum.IntEnum):
 
 
 def start(update: Update, context: CallbackContext) -> None:
-    keyboard = [[bot_strings.new_question_btn, bot_strings.give_up_btn], [bot_strings.my_score_btn]]
+    keyboard = [[bot_strings.new_question_btn, bot_strings.give_up_btn]]
     reply_markup = ReplyKeyboardMarkup(keyboard)
     update.message.reply_text(bot_strings.welcome_msg, reply_markup=reply_markup)
 
