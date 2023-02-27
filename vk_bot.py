@@ -1,8 +1,9 @@
 import logging
+import random
 from pathlib import Path
 
 import vk_api
-import redis
+import redisworks
 from environs import Env
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.longpoll import VkLongPoll, VkEventType
@@ -19,15 +20,16 @@ def get_quiz_keyboard():
     keyboard.add_button(bot_strings.new_question_btn, color=VkKeyboardColor.PRIMARY)
     keyboard.add_line()
     keyboard.add_button(bot_strings.give_up_btn, color=VkKeyboardColor.SECONDARY)
-    keyboard.add_line()
-    keyboard.add_button(bot_strings.my_score_btn, color=VkKeyboardColor.SECONDARY)
     return keyboard.get_keyboard()
 
 
 def send_new_question(event: vk_api.longpoll.Event, vk_client: vk_api.vk_api.VkApiMethod,
-                      redis_connection: redis.Redis):
-    quiz_item = QuizItem.random()
-    redis_connection.set(event.user_id, quiz_item.as_json())
+                      redis: redisworks.Root):
+    question_id = random.randrange(redis.available_questions + 1)
+    redis[f'vk_user_{event.user_id}'] = question_id
+    quiz_item = QuizItem.from_dotobject(
+        redis[f'quiz_item_{question_id}']
+    )
     vk_client.messages.send(
         user_id=event.user_id,
         message=quiz_item.question,
@@ -38,9 +40,9 @@ def send_new_question(event: vk_api.longpoll.Event, vk_client: vk_api.vk_api.VkA
 
 
 def evaluate_answer(event: vk_api.longpoll.Event, vk_client: vk_api.vk_api.VkApiMethod,
-                    redis_connection: redis.Redis):
-    raw_quiz_item = redis_connection.get(event.user_id)
-    current_quiz_item = QuizItem.from_json(raw_quiz_item)
+                    redis: redisworks.Root):
+    current_question_id = redis[f'vk_user_{event.user_id}']
+    current_quiz_item = QuizItem.from_dotobject(redis[f'quiz_item_{current_question_id}'])
     if event.text.lower() == current_quiz_item.answer.lower():
         vk_client.messages.send(
             user_id=event.user_id,
@@ -58,26 +60,26 @@ def evaluate_answer(event: vk_api.longpoll.Event, vk_client: vk_api.vk_api.VkApi
 
 
 def give_up(event: vk_api.longpoll.Event, vk_client: vk_api.vk_api.VkApiMethod,
-            redis_connection: redis.Redis):
-    raw_quiz_item = redis_connection.get(event.user_id)
-    current_quiz_item = QuizItem.from_json(raw_quiz_item)
+            redis: redisworks.Root):
+    current_question_id = redis[f'vk_user_{event.user_id}']
+    current_quiz_item = QuizItem.from_dotobject(redis[f'quiz_item_{current_question_id}'])
     vk_client.messages.send(
         user_id=event.user_id,
         message=bot_strings.answer_msg.format(current_quiz_item.full_answer),
         random_id=get_random_id(),
         keyboard=get_quiz_keyboard(),
     )
-    return send_new_question(event, vk_client, redis_connection)
+    return send_new_question(event, vk_client, redis)
 
 
 def handle_message(event: vk_api.longpoll.Event, vk_client: vk_api.vk_api.VkApiMethod,
-                   redis_connection: redis.Redis):
+                   redis: redisworks.Root):
     if event.text == bot_strings.new_question_btn:
-        return send_new_question(event, vk_client, redis_connection)
+        return send_new_question(event, vk_client, redis)
     elif event.text == bot_strings.give_up_btn:
-        return give_up(event, vk_client, redis_connection)
+        return give_up(event, vk_client, redis)
     else:
-        return evaluate_answer(event, vk_client, redis_connection)
+        return evaluate_answer(event, vk_client, redis)
 
 
 def main():
@@ -90,7 +92,7 @@ def main():
     env.read_env()
     vk_token = env.str('VK_TOKEN')
 
-    redis_connection = redis.Redis(
+    redis = redisworks.Root(
         host=env.str('REDIS_HOST'),
         port=env.int('REDIS_PORT'),
         password=env.str('REDIS_PASS'),
@@ -102,7 +104,7 @@ def main():
     longpoll = VkLongPoll(vk_session)
     for event in longpoll.listen():
         if event.type == VkEventType.MESSAGE_NEW and event.to_me:
-            handle_message(event, vk_client, redis_connection)
+            handle_message(event, vk_client, redis)
 
 
 if __name__ == "__main__":
