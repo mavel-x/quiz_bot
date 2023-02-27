@@ -52,7 +52,7 @@ def main():
     env = Env()
     env.read_env()
     question_limit = env.int('QUESTION_LIMIT', 1_000)
-    question_dir = BASE_DIR / env.path('QUESTION_DIR', 'data/quiz-questions')
+    question_dir = BASE_DIR / env.path('QUESTION_DIR', BASE_DIR / 'data/quiz-questions')
 
     redis = redisworks.Root(
         host=env.str('REDIS_HOST'),
