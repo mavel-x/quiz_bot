@@ -16,12 +16,22 @@ class QuizItem:
     def answer(self):
         return self.full_answer.partition('.')[0].partition('(')[0].strip()
 
+    def as_dict(self):
+        return dataclasses.asdict(self)
+
     def as_json(self):
-        return json.dumps(dataclasses.asdict(self))
+        return json.dumps(self.as_dict())
 
     @classmethod
     def from_json(cls, json_str):
         return cls(**json.loads(json_str))
+
+    @classmethod
+    def from_dotobject(cls, dotobject):
+        return cls(
+            question=dotobject['question'],
+            full_answer=dotobject['full_answer'],
+        )
 
     @classmethod
     def extract_all_from_file(cls, file: Path):
