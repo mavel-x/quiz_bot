@@ -1,8 +1,4 @@
 import dataclasses
-from pathlib import Path
-
-BASE_DIR = Path(__file__).parent
-QUESTION_DIR = BASE_DIR / 'data/quiz-questions'
 
 
 @dataclasses.dataclass
