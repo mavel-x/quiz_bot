@@ -41,6 +41,19 @@ def get_quiz_items_from_files(files: list[Path], limit: int):
         quiz_items.extend(read_quiz_items_from_file(file))
         if len(quiz_items) > limit:
             return quiz_items[:limit]
+    return quiz_items
+
+
+def load_quiz_items_to_redis(quiz_items: list, redis: redisworks.Root):
+    update_threshold = 50
+    for item_num, quiz_item in enumerate(quiz_items, start=1):
+        redis[f'quiz_item_{item_num}'] = quiz_item.as_dict()
+        logger.info(f'Uploaded question {item_num}.')
+
+        # setting this value takes some time, so we update it only once in a while
+        if item_num % update_threshold == 0:
+            redis.available_questions = item_num
+    logger.info('Finished uploading.')
 
 
 def main():
@@ -62,13 +75,7 @@ def main():
 
     question_files = [file for file in question_dir.iterdir() if file.suffix == '.txt']
     quiz_items = get_quiz_items_from_files(question_files, limit=question_limit)
-    for item_num, quiz_item in enumerate(quiz_items, start=1):
-        redis[f'quiz_item_{item_num}'] = quiz_item.as_dict()
-        logger.info(f'Uploaded question {item_num}.')
-        if item_num % 50 == 0:
-            redis.available_questions = item_num
-
-    logger.info('Finished uploading.')
+    load_quiz_items_to_redis(quiz_items, redis)
 
 
 if __name__ == '__main__':
