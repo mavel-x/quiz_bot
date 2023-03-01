@@ -45,14 +45,14 @@ def get_quiz_items_from_files(files: list[Path], limit: int):
 
 
 def load_quiz_items_to_redis(quiz_items: list, redis: redisworks.Root):
-    update_threshold = 50
-    for item_num, quiz_item in enumerate(quiz_items, start=1):
-        redis[f'quiz_item_{item_num}'] = quiz_item.as_dict()
-        logger.info(f'Uploaded question {item_num}.')
-
-        # setting this value takes some time, so we update it only once in a while
-        if item_num % update_threshold == 0:
-            redis.available_questions = item_num
+    try:
+        for item_num, quiz_item in enumerate(quiz_items, start=1):
+            redis[f'quiz_item_{item_num}'] = quiz_item.as_dict()
+            logger.info(f'Uploaded question {item_num}.')
+    except KeyboardInterrupt:
+        redis.available_questions = item_num - 1
+    else:
+        redis.available_questions = item_num
     logger.info('Finished uploading.')
 
 
