@@ -37,6 +37,3 @@
 Для параллельного запуска на сервере вам поможет утилита 
 [screens](https://github.com/python-telegram-bot/python-telegram-bot/wiki/Hosting-your-bot#start-your-bot) 
 или [systemd](https://dvmn.org/encyclopedia/deploy/systemd-tutorial/).
-
-## О проекте
-Это учебный проект для школы Python-разработчиков [dvmn.org](https://dvmn.org).
